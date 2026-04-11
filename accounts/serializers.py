@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import CustomUser, Follow, OTPVerification, UserProfile, validate_username
-from accounts.tasks import send_otp_email_task
+from accounts.tasks import enqueue_otp_email
 from canada247.api import sanitize_text
 
 
@@ -57,7 +57,7 @@ class RegisterSerializer(serializers.Serializer):
         )
         otp = generate_otp()
         OTPVerification.objects.create(user=user, otp_code=otp, purpose=OTPVerification.PURPOSE_VERIFY)
-        send_otp_email_task.delay(user.email, otp, "Verify your Canada 24/7 account")
+        enqueue_otp_email(user.email, otp, "Verify your Canada 24/7 account")
         return user
 
 
@@ -110,7 +110,7 @@ class ResendOTPSerializer(serializers.Serializer):
         OTPVerification.objects.filter(user=user, purpose=purpose, is_used=False).update(is_used=True)
         otp = generate_otp()
         OTPVerification.objects.create(user=user, otp_code=otp, purpose=purpose)
-        send_otp_email_task.delay(user.email, otp, "Your Canada 24/7 security code")
+        enqueue_otp_email(user.email, otp, "Your Canada 24/7 security code")
         return user
 
 
@@ -143,7 +143,7 @@ class ForgotPasswordSerializer(serializers.Serializer):
         OTPVerification.objects.filter(user=user, purpose=OTPVerification.PURPOSE_RESET, is_used=False).update(is_used=True)
         otp = generate_otp()
         OTPVerification.objects.create(user=user, otp_code=otp, purpose=OTPVerification.PURPOSE_RESET)
-        send_otp_email_task.delay(user.email, otp, "Reset your Canada 24/7 password")
+        enqueue_otp_email(user.email, otp, "Reset your Canada 24/7 password")
         return user
 
 
