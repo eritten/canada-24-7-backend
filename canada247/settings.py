@@ -117,7 +117,9 @@ EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=False)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Canada 24/7 <no-reply@canada247.app>")
+GOOGLE_OAUTH_CLIENT_IDS = [client_id.strip() for client_id in env.list("GOOGLE_OAUTH_CLIENT_IDS", default=[]) if client_id.strip()]
 
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[FRONTEND_URL])
 CORS_ALLOW_CREDENTIALS = True
