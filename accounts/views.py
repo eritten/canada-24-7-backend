@@ -110,6 +110,7 @@ class PublicProfileView(generics.RetrieveAPIView):
     serializer_class = PublicUserSerializer
     lookup_field = "username"
     queryset = UserProfile.objects.select_related("user")
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_object(), context={"request": request})
@@ -123,6 +124,7 @@ class FeedPagination(PageNumberPagination):
 class PublicProfilePostsView(generics.ListAPIView):
     serializer_class = PostSerializer
     pagination_class = FeedPagination
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         profile = generics.get_object_or_404(UserProfile, username=self.kwargs["username"])
@@ -137,6 +139,7 @@ class PublicProfilePostsView(generics.ListAPIView):
 class ProfileFollowersView(generics.ListAPIView):
     serializer_class = PublicUserSerializer
     pagination_class = FeedPagination
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         profile = generics.get_object_or_404(UserProfile, username=self.kwargs["username"])
@@ -151,6 +154,7 @@ class ProfileFollowersView(generics.ListAPIView):
 class ProfileFollowingView(generics.ListAPIView):
     serializer_class = PublicUserSerializer
     pagination_class = FeedPagination
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         profile = generics.get_object_or_404(UserProfile, username=self.kwargs["username"])

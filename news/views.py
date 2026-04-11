@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics, permissions
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 
@@ -15,6 +15,7 @@ class StandardPagination(PageNumberPagination):
 class NewsListView(generics.ListAPIView):
     serializer_class = PostSerializer
     pagination_class = StandardPagination
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         return Post.objects.select_related("author", "author__profile").filter(is_news=True)

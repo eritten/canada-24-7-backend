@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.db.models import Count, Q
 from django.utils import timezone
-from rest_framework import generics, status
+from rest_framework import generics, permissions, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 
@@ -20,11 +20,14 @@ class StandardPagination(PageNumberPagination):
 class FeedView(generics.ListAPIView):
     serializer_class = PostSerializer
     pagination_class = StandardPagination
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        followed_ids = Follow.objects.filter(follower=self.request.user).values_list("following_id", flat=True)
         category = self.request.query_params.get("category")
-        queryset = Post.objects.select_related("author", "author__profile").filter(Q(author_id__in=followed_ids) | Q(is_news=True))
+        queryset = Post.objects.select_related("author", "author__profile")
+        if self.request.user.is_authenticated:
+            followed_ids = Follow.objects.filter(follower=self.request.user).values_list("following_id", flat=True)
+            queryset = queryset.filter(Q(author_id__in=followed_ids) | Q(author=self.request.user) | Q(is_news=True))
         if category:
             queryset = queryset.filter(category=category)
         return queryset.distinct()
@@ -38,6 +41,7 @@ class FeedView(generics.ListAPIView):
 class TrendingPostsView(generics.ListAPIView):
     serializer_class = PostSerializer
     pagination_class = StandardPagination
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         since = timezone.now() - timedelta(hours=24)
@@ -58,6 +62,11 @@ class PostCreateView(generics.ListCreateAPIView):
     pagination_class = StandardPagination
     queryset = Post.objects.select_related("author", "author__profile")
 
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
     def list(self, request, *args, **kwargs):
         page = self.paginate_queryset(self.filter_queryset(self.get_queryset()))
         serializer = self.get_serializer(page, many=True, context={"request": request})
@@ -73,6 +82,11 @@ class PostCreateView(generics.ListCreateAPIView):
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PostSerializer
     queryset = Post.objects.select_related("author", "author__profile")
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     def get(self, request, *args, **kwargs):
         return success_response(data=self.get_serializer(self.get_object(), context={"request": request}).data)
@@ -143,6 +157,11 @@ class PostCommentsView(generics.ListCreateAPIView):
     serializer_class = CommentSerializer
     pagination_class = StandardPagination
 
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
     def get_queryset(self):
         post = generics.get_object_or_404(Post, pk=self.kwargs["pk"])
         return post.comments.filter(parent__isnull=True).select_related("author", "author__profile")
@@ -189,6 +208,8 @@ class CommentLikeView(APIView):
 
 
 class GlobalSearchView(APIView):
+    permission_classes = [permissions.AllowAny]
+
     def get(self, request):
         query = request.query_params.get("q", "").strip()
         posts = Post.objects.select_related("author", "author__profile").filter(content__icontains=query)[:10]
@@ -204,6 +225,8 @@ class GlobalSearchView(APIView):
 
 
 class UserSearchView(APIView):
+    permission_classes = [permissions.AllowAny]
+
     def get(self, request):
         query = request.query_params.get("q", "").strip()
         users = UserProfile.objects.select_related("user").filter(Q(username__icontains=query) | Q(user__full_name__icontains=query))[:20]
@@ -211,6 +234,8 @@ class UserSearchView(APIView):
 
 
 class PostSearchView(APIView):
+    permission_classes = [permissions.AllowAny]
+
     def get(self, request):
         query = request.query_params.get("q", "").strip()
         posts = Post.objects.select_related("author", "author__profile").filter(content__icontains=query)[:20]
